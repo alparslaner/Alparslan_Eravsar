@@ -1,24 +1,12 @@
 (() => {
-  const init = () => {
-    createProductDetailContainer();
-    loadMaterialIcons();
-    buildHTML();
-    buildCSS();
-    setEvents();
-  };
+  const ENDPOINT =
+    'https://gist.githubusercontent.com/sevindi/8bcbde9f02c1d4abe112809c974e1f49/raw/9bf93b58df623a9b16f1db721cd0a7a539296cf0/products.json';
+  const LOCAL_STORAGE_KEY_PRODUCTS = 'products_data';
 
-  const createProductDetailContainer = () => {
-    const container = document.createElement('div');
-    container.className = 'product-detail';
-    document.body.appendChild(container);
-  };
-
-  const loadMaterialIcons = () => {
-    const link = document.createElement('link');
-    link.href = 'https://fonts.googleapis.com/icon?family=Material+Icons';
-    link.rel = 'stylesheet';
-    document.head.appendChild(link);
-  };
+  let allProducts = [];
+  let currentTabIndex = 0;
+  let currentSliderIndex = 0;
+  let thumbPage = 0;
 
   const bluBarSentences = [
     'Karne Hediyeleri İçin Tıkla',
@@ -638,11 +626,104 @@
     },
   ];
 
-  let currentTabIndex = 0;
-  let currentSliderIndex = 0;
-  let thumbPage = 0;
+  // baslatma
+  const init = () => {
+    createProductDetailContainer();
+    loadFonts();
+    buildHTML();
+    buildCSS();
+    renderSliderImage();
+    fetchAndRenderProducts().then(() => {
+      setEvents();
+    });
+  };
 
-  function renderSliderImage(direction) {
+  // data fetching & storage
+  const getProductsFromLocalStorage = () => {
+    const storedProducts = localStorage.getItem(LOCAL_STORAGE_KEY_PRODUCTS);
+    return storedProducts ? JSON.parse(storedProducts) : null;
+  };
+
+  const saveProductsToLocalStorage = (products) => {
+    localStorage.setItem(LOCAL_STORAGE_KEY_PRODUCTS, JSON.stringify(products));
+  };
+
+  const fetchAndRenderProducts = async () => {
+    let products = getProductsFromLocalStorage();
+    if (products) {
+      console.log('Ürünler LocalStorage üzerinden yüklendi.');
+    } else {
+      try {
+        console.log('Ürünler API üzerinden çekiliyor...');
+        const response = await fetch(ENDPOINT);
+        products = await response.json();
+        saveProductsToLocalStorage(products);
+        console.log('Ürünler başarıyla çekildi ve LocalStorage üzerine kaydedildi.');
+      } catch (error) {
+        console.error('API üzerinden ürünler çekilirken bir hata oluştu:', error);
+        return;
+      }
+    }
+    allProducts = products;
+    renderProductSlider(allProducts);
+  };
+
+  // UI
+  const createProductDetailContainer = () => {
+    const container = document.createElement('div');
+    container.className = 'product-detail';
+    document.body.appendChild(container);
+  };
+
+  const loadFonts = () => {
+    const materialIconsLink = document.createElement('link');
+    materialIconsLink.href = 'https://fonts.googleapis.com/icon?family=Material+Icons';
+    materialIconsLink.rel = 'stylesheet';
+    document.head.appendChild(materialIconsLink);
+
+    const quicksandFontLink = document.createElement('link');
+    quicksandFontLink.href =
+      'https://fonts.googleapis.com/css2?family=Quicksand:wght@700&display=swap';
+    quicksandFontLink.rel = 'stylesheet';
+    document.head.appendChild(quicksandFontLink);
+  };
+
+  const renderProductSlider = (products) => {
+    const track = document.querySelector('.product-slider-track');
+    if (!track) return;
+
+    track.innerHTML = products
+      .map((p) => {
+        const hasDiscount = p.price < p.original_price;
+        const discountAmount = hasDiscount
+          ? Math.round(((p.original_price - p.price) / p.original_price) * 100)
+          : 0;
+
+        const cardContent = `
+        <div class="product-image-container">
+            ${hasDiscount ? `<div class="discount-badge">%${discountAmount} İNDİRİM</div>` : ''}
+            <button class="product-favorite-btn" data-id="${p.id}"><span class="material-icons">favorite_border</span></button>
+            <img src="${p.img}" alt="${p.name}" class="product-card-img" />
+        </div>
+        <div class="product-info">
+            <div class="product-brand">${p.brand || ''}</div>
+            <div class="product-title">${p.name}</div>
+            <div class="product-price-container">
+                <div class="product-price">${p.price.toFixed(2)} TL</div>
+                ${hasDiscount ? `<div class="product-original-price">${p.original_price.toFixed(2)} TL</div>` : ''}
+            </div>
+        </div>
+        <button class="product-add-to-cart-btn">Ürüne Git</button>
+      `;
+
+        return `<div class="product-card" data-id="${p.id}" data-url="${p.url}">${cardContent}</div>`;
+      })
+      .join('');
+
+    updateProductSlider(0);
+  };
+
+  const renderSliderImage = (direction) => {
     const sliderWrapper = document.querySelector('.slider-wrapper');
     const imagePanel = document.querySelector('.slider-image-panel');
     if (!imagePanel || !sliderWrapper) return;
@@ -669,9 +750,9 @@
     imagePanel.appendChild(newImgLink);
 
     renderThumbnails();
-  }
+  };
 
-  function renderThumbnails() {
+  const renderThumbnails = () => {
     const thumbsContainer = document.querySelector('.slider-thumbs');
     const thumbsArea = document.querySelector('.slider-thumbs-area');
     const slides = sliderTabData[currentTabIndex].slides;
@@ -680,8 +761,6 @@
     thumbsArea.style.display = 'flex';
 
     const thumbsPerPage = 10;
-    const totalPages = Math.ceil(slides.length / thumbsPerPage);
-
     const currentPage = Math.floor(currentSliderIndex / thumbsPerPage);
 
     const startIndex = currentPage * thumbsPerPage;
@@ -711,33 +790,141 @@
     if (thumbPage !== currentPage) {
       thumbPage = currentPage;
     }
-  }
+  };
 
+  // slider
+  const updateProductSlider = (index) => {
+    const track = document.querySelector('.product-slider-track');
+    const prevBtn = document.querySelector('.product-slider-arrow.prev');
+    const nextBtn = document.querySelector('.product-slider-arrow.next');
+
+    if (!track || !prevBtn || !nextBtn || track.children.length === 0) return;
+
+    const cardWidth = track.querySelector('.product-card').offsetWidth;
+    const gap = parseInt(window.getComputedStyle(track).gap);
+    const totalMove = cardWidth + gap;
+
+    track.style.transform = `translateX(-${index * totalMove}px)`;
+
+    prevBtn.disabled = index === 0;
+    const cardsToShow = 5;
+    nextBtn.disabled = index >= allProducts.length - cardsToShow;
+  };
+
+  const updateSlider = (direction) => {
+    const slides = sliderTabData[currentTabIndex].slides;
+    let newTabIndex = currentTabIndex;
+    let newSliderIndex = currentSliderIndex;
+
+    if (direction === 'right') {
+      if (currentSliderIndex >= slides.length - 1) {
+        newTabIndex = (currentTabIndex + 1) % sliderTabs.length;
+        newSliderIndex = 0;
+      } else {
+        newSliderIndex = currentSliderIndex + 1;
+      }
+    } else if (direction === 'left') {
+      if (currentSliderIndex <= 0) {
+        newTabIndex = (currentTabIndex - 1 + sliderTabs.length) % sliderTabs.length;
+        newSliderIndex = 0;
+      } else {
+        newSliderIndex = currentSliderIndex - 1;
+      }
+    }
+
+    currentTabIndex = newTabIndex;
+    currentSliderIndex = newSliderIndex;
+
+    document.querySelectorAll('.slider-tab-btn').forEach((btn, i) => {
+      btn.classList.toggle('active', i === currentTabIndex);
+    });
+
+    renderSliderImage(direction);
+  };
+  //js event
+  const setEvents = () => {
+    let blueBarIndex = 0;
+    const el = document.getElementById('topbar-carousel');
+    if (el) {
+      el.textContent = bluBarSentences[blueBarIndex];
+      setInterval(() => {
+        blueBarIndex = (blueBarIndex + 1) % bluBarSentences.length;
+        el.textContent = bluBarSentences[blueBarIndex];
+      }, 4000);
+    }
+
+    // Top Slider
+    document
+      .querySelectorAll('.thumb-slider-arrow.prev')
+      .forEach((btn) => (btn.onclick = () => updateSlider('left')));
+    document
+      .querySelectorAll('.thumb-slider-arrow.next')
+      .forEach((btn) => (btn.onclick = () => updateSlider('right')));
+    document.querySelectorAll('.slider-tab-btn').forEach((btn, i) => {
+      btn.addEventListener('click', function () {
+        currentTabIndex = i;
+        currentSliderIndex = 0;
+        thumbPage = 0;
+        document.querySelectorAll('.slider-tab-btn').forEach((b) => b.classList.remove('active'));
+        this.classList.add('active');
+        renderSliderImage();
+      });
+    });
+
+    // Product Slider
+    let productSliderIndex = 0;
+    const productPrevBtn = document.querySelector('.products-slider .prev');
+    const productNextBtn = document.querySelector('.products-slider .next');
+
+    if (productPrevBtn) {
+      productPrevBtn.onclick = () => {
+        if (productSliderIndex > 0) {
+          productSliderIndex--;
+          updateProductSlider(productSliderIndex);
+        }
+      };
+    }
+
+    if (productNextBtn) {
+      productNextBtn.onclick = () => {
+        const cardsToShow = 5;
+        if (productSliderIndex < allProducts.length - cardsToShow) {
+          productSliderIndex++;
+          updateProductSlider(productSliderIndex);
+        }
+      };
+    }
+
+    // Product Card
+    document.querySelector('.product-slider-track')?.addEventListener('click', (e) => {
+      const card = e.target.closest('.product-card');
+      if (!card) return;
+
+      const isButtonClick = e.target.closest('button');
+      if (isButtonClick) return;
+
+      const url = card.dataset.url;
+      if (url) {
+        window.open(url, '_blank');
+      }
+    });
+  };
+  //html
   const buildHTML = () => {
-    const html = `
-      <!-- TOP BLUE BAR START -->
+    document.querySelector('.product-detail').innerHTML = `
       <div class="topbar">
         <div class="topbar-content">
-          <div class="topbar-center">
-            <span class="topbar-carousel" id="topbar-carousel">${bluBarSentences[0]}</span>
-          </div>
+          <div class="topbar-center"><span class="topbar-carousel" id="topbar-carousel">${bluBarSentences[0]}</span></div>
           <div class="topbar-links">
-            <a href="#" class="topbar-link"><span class="material-icons">help_outline</span> YARDIM</a>
-            <a href="#" class="topbar-link"><span class="material-icons">headset_mic</span> İLETİŞİM</a>
+            <a href="#" class="topbar-link"><span class="material-icons">help_outline</span>YARDIM</a>
+            <a href="#" class="topbar-link"><span class="material-icons">headset_mic</span>İLETİŞİM</a>
           </div>
         </div>
       </div>
-      <!-- TOP BLUE BAR END -->
-      <!-- NAVBAR START -->
       <nav class="navbar">
         <div class="navbar-header">
-          <a href="#" class="logo">
-            <img src="https://cdn05.e-bebek.com/y.ebebek/9973673459742.svg" alt="Logo">
-          </a>
-          <div class="search-bar">
-            <span class="material-icons search-icon">search</span>
-            <input type="text" placeholder="Ürün, kategori veya marka arayın">
-          </div>
+          <a href="#" class="logo"><img src="https://cdn05.e-bebek.com/y.ebebek/9973673459742.svg" alt="Logo"></a>
+          <div class="search-bar"><span class="material-icons search-icon">search</span><input type="text" placeholder="Ürün, kategori veya marka arayın"></div>
           <div class="navbar-actions">
             <a href="#" class="favorite-btn" aria-label="Favoriler"><span class="material-icons">favorite_border</span></a>
             <a href="#" class="login-btn"><span class="material-icons">person</span><span>Giriş Yap/Üye Ol</span></a>
@@ -745,273 +932,65 @@
           </div>
         </div>
         <div class="navbar-menu">
-          <div class="navbar-menu-left">
-            <a href="#">Kategoriler <span class="material-icons navbar-arrow">expand_more</span></a>
-            <a href="#">Keşfet <span class="material-icons navbar-arrow">expand_more</span></a>
-            <a href="#">Hediye <span class="material-icons navbar-arrow">expand_more</span></a>
-            <a href="#" class="blue-link">İnternete Özel Ürünler</a>
-            <a href="#" class="orange-link">Kampanyalar</a>
-            <a href="#" class="orange-link">Outlet</a>
-          </div>
-          <div class="navbar-menu-right">
-            <a href="#" class="navbar-link"><span class="material-icons">local_shipping</span> SİPARİŞİM NEREDE</a>
-            <a href="#" class="navbar-link"><span class="material-icons">location_on</span> EN YAKIN EBEBEK</a>
-          </div>
+          <div class="navbar-menu-left"><a href="#">Kategoriler <span class="material-icons navbar-arrow">expand_more</span></a><a href="#">Keşfet <span class="material-icons navbar-arrow">expand_more</span></a><a href="#">Hediye <span class="material-icons navbar-arrow">expand_more</span></a><a href="#" class="blue-link">İnternete Özel Ürünler</a><a href="#" class="orange-link">Kampanyalar</a><a href="#" class="orange-link">Outlet</a></div>
+          <div class="navbar-menu-right"><a href="#" class="navbar-link"><span class="material-icons">local_shipping</span>SİPARİŞİM NEREDE</a><a href="#" class="navbar-link"><span class="material-icons">location_on</span>EN YAKIN EBEBEK</a></div>
         </div>
       </nav>
-      <!-- NAVBAR END -->
-      <!-- SLIDER WRAPPER START -->
       <div class="slider-wrapper" style="background-image: url('${sliderTabData[0].slides[0].bg}');">
-        <div class="slider-tabs-container">
-            <ul class="slider-tabs">
-              ${sliderTabs
-                .map(
-                  (tab, i) => `
-                <li><button type="button" class="slider-tab-btn${i === 0 ? ' active' : ''}" data-index="${i}">${tab}</button></li>
-              `,
-                )
-                .join('')}
-            </ul>
-        </div>
-        <div class="slider-main-box">
-            <div class="slider-image-panel">
-                 <!-- Ana slider görseli buraya gelecek -->
-            </div>
-        </div>
+        <div class="slider-tabs-container"><ul class="slider-tabs">${sliderTabs.map((tab, i) => `<li><button type="button" class="slider-tab-btn${i === 0 ? ' active' : ''}" data-index="${i}">${tab}</button></li>`).join('')}</ul></div>
+        <div class="slider-main-box"><div class="slider-image-panel"></div></div>
         <div class="slider-thumbs-area">
             <button class="thumb-slider-arrow prev"><span class="material-icons">chevron_left</span></button>
-            <div class="slider-thumbs-wrapper">
-                <div class="slider-thumbs">
-                    <!-- Küçük slider görselleri buraya gelecek -->
-                </div>
-            </div>
+            <div class="slider-thumbs-wrapper"><div class="slider-thumbs"></div></div>
             <button class="thumb-slider-arrow next"><span class="material-icons">chevron_right</span></button>
         </div>
       </div>
-      <!-- SLIDER WRAPPER END -->
+      <div class="product-div">
+        <div class="product-like"><h2>Beğenebileceğinizi Düşündüklerimiz</h2></div>
+        <div class="products-slider">
+            <button class="product-slider-arrow prev" disabled><span class="material-icons">chevron_left</span></button>
+            <div class="product-slider-wrapper"><div class="product-slider-track"></div></div>
+            <button class="product-slider-arrow next"><span class="material-icons">chevron_right</span></button>
+        </div>
+      </div>
     `;
-    document.querySelector('.product-detail').innerHTML = html;
-    setTimeout(() => {
-      renderSliderImage();
-    }, 0);
   };
-
+  //css
   const buildCSS = () => {
-    const style = document.createElement('style');
-    style.textContent = `
-      html, body {
-        box-sizing: border-box;
-        overflow-x: hidden;
-        margin: 0;
-        padding: 0;
-        font-family: Arial, sans-serif;
-        background: #fff;
-      }
-      .material-icons {
-        font-family: 'Material Icons';
-        font-weight: normal;
-        font-style: normal;
-        font-size: 24px;
-        line-height: 1;
-        letter-spacing: normal;
-        text-transform: none;
-        display: inline-block;
-        white-space: nowrap;
-        word-wrap: normal;
-        direction: ltr;
-        -webkit-font-feature-settings: 'liga';
-        -webkit-font-smoothing: antialiased;
-      }
-      /* SLIDER */
-      .slider-wrapper {
-        width: 100vw;
-        min-height: 600px;
-        background-size: cover;
-        background-position: center;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: flex-start;
-        position: relative;
-        margin: 0 auto 0 auto;
-        padding: 24px 0;
-        box-sizing: border-box;
-      }
-      .slider-tabs-container {
-          width: 100%;
-          display: flex;
-          justify-content: center;
-          padding: 8px 0;
-      }
-      .slider-tabs {
-        display: inline-flex;
-        list-style: none;
-        padding: 0 16px;
-        margin: 0;
-        flex-wrap: nowrap;
-        overflow-x: auto;
-        gap: 1rem;
-        max-width: 100%;
-        box-sizing: border-box;
-      }
-      .slider-tabs::-webkit-scrollbar {
-        height: 4px;
-      }
-      .slider-tabs::-webkit-scrollbar-track {
-        background: rgba(255, 255, 255, 0.2);
-      }
-      .slider-tabs::-webkit-scrollbar-thumb {
-        background: #fff;
-        border-radius: 2px;
-      }
-      .slider-tab-btn {
-        border: none;
-        outline: none;
-        background: transparent;
-        color: #fff;
-        font-weight: 600;
-        font-family: 'Poppins', cursive, Arial, sans-serif;
-        padding: 10px 18px;
-        border-radius: 2em;
-        cursor: pointer;
-        transition: background 0.2s, color 0.2s;
-        white-space: nowrap;
-      }
-      .slider-tab-btn.active {
-        background: #fff;
-        color: #f28e00;
-      }
-      .slider-main-box {
-        background: #fff;
-        border-radius: 24px;
-        width: 100%;
-        max-width: 1080px;
-        height: 400px;
-        margin: 16px auto;
-        display: flex;
-        align-items: center;
-        padding: 16px;
-        position: relative;
-        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-        overflow: hidden;
-      }
-      .slider-image-panel {
-        width: 100%;
-        height: 100%;
-        position: relative;
-        overflow: hidden;
-        border-radius: 16px;
-      }
-      .slider-main-img-link {
-        display: block;
-        width: 100%;
-        height: 100%;
-        position: absolute;
-        top: 0;
-        left: 0;
-      }
-      .slider-main-img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        object-position: right;
-        position: absolute;
-        left: 0;
-        top: 0;
-        opacity: 1;
-        z-index: 1;
-      }
-      .slider-thumbs-area {
-        width: 100%;
-        max-width: 960px;
-        margin: 16px auto 0 auto;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        position: relative;
-        min-height: 80px;
-        padding: 0 20px;
-        box-sizing: border-box;
-      }
-      .thumb-slider-arrow {
-        width: 44px;
-        height: 44px;
-        border: none;
-        background: #fff;
-        color: #666;
-        border-radius: 50%;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        font-size: 28px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: all 0.2s;
-        flex-shrink: 0;
-      }
-      .thumb-slider-arrow.prev {
-        margin-right: 0;
-      }
-      .thumb-slider-arrow.next {
-        margin-left: 0;
-      }
-      .thumb-slider-arrow:hover {
-        background: #f1f8fc;
-        color: #0092db;
-        transform: scale(1.05);
-      }
-      .slider-thumbs-wrapper {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-grow: 1;
-        overflow: hidden;
-      }
-      .slider-thumbs {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        transition: transform 0.3s;
-        justify-content: center;
-        flex-wrap: nowrap;
-        padding: 0 10px;
-      }
-      .slider-thumb {
-        border: 2.5px solid transparent;
-        background: #fff;
-        border-radius: 12px;
-        padding: 3px;
-        width: 68px;
-        height: 45px;
-        flex-shrink: 0;
-        cursor: pointer;
-        transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      }
-      .slider-thumb:hover {
-        transform: scale(1.05);
-        box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-      }
-      .slider-thumb img {
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        border-radius: 8px;
-      }
-      .slider-thumb.active {
-        border-color: #f7931e;
-        box-shadow: 0 4px 16px rgba(255, 153, 0, 0.25);
-        transform: scale(1.05);
-      }
-      .slider-main-img.slide-out-left { animation: slideOutLeft 0.22s cubic-bezier(0.4,0,0.2,1) forwards; z-index: 2; }
-      .slider-main-img.slide-in-right { animation: slideInRight 0.22s cubic-bezier(0.4,0,0.2,1) forwards; z-index: 3; }
-      .slider-main-img.slide-out-right { animation: slideOutRight 0.22s cubic-bezier(0.4,0,0.2,1) forwards; z-index: 2; }
-      .slider-main-img.slide-in-left { animation: slideInLeft 0.22s cubic-bezier(0.4,0,0.2,1) forwards; z-index: 3; }
+    document.head.insertAdjacentHTML(
+      'beforeend',
+      `<style>
+      html, body { box-sizing: border-box; overflow-x: hidden; margin: 0; padding: 0; font-family: Arial, sans-serif; background: #fff; }
+      .material-icons { font-family: 'Material Icons'; font-weight: normal; font-style: normal; font-size: 24px; line-height: 1; letter-spacing: normal; text-transform: none; display: inline-block; white-space: nowrap; word-wrap: normal; direction: ltr; -webkit-font-feature-settings: 'liga'; -webkit-font-smoothing: antialiased; }
+      .slider-wrapper { width: 100vw; min-height: 600px; background-size: cover; background-position: center; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; position: relative; margin: 0 auto; padding: 24px 0; box-sizing: border-box; }
+      .slider-tabs-container { width: 100%; display: flex; justify-content: center; padding: 8px 0; }
+      .slider-tabs { display: inline-flex; list-style: none; padding: 0 16px; margin: 0; flex-wrap: nowrap; overflow-x: auto; gap: 1rem; max-width: 100%; box-sizing: border-box; }
+      .slider-tabs::-webkit-scrollbar { height: 4px; }
+      .slider-tabs::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.2); }
+      .slider-tabs::-webkit-scrollbar-thumb { background: #fff; border-radius: 2px; }
+      .slider-tab-btn { border: none; outline: none; background: transparent; color: #fff; font-weight: 600; font-family: 'Poppins', cursive, Arial, sans-serif; padding: 10px 18px; border-radius: 2em; cursor: pointer; transition: background 0.2s, color 0.2s; white-space: nowrap; }
+      .slider-tab-btn.active { background: #fff; color: #f28e00; }
+      .slider-main-box { background: #fff; border-radius: 24px; width: 100%; max-width: 1080px; height: 400px; margin: 16px auto; display: flex; align-items: center; padding: 16px; position: relative; box-shadow: 0 8px 32px rgba(0,0,0,0.1); overflow: hidden; }
+      .slider-image-panel { width: 100%; height: 100%; position: relative; overflow: hidden; border-radius: 16px; }
+      .slider-main-img-link { display: block; width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+      .slider-main-img { width: 100%; height: 100%; object-fit: contain; object-position: right; position: absolute; left: 0; top: 0; opacity: 1; z-index: 1; }
+      .slider-thumbs-area { width: 100%; max-width: 960px; margin: 16px auto 0 auto; display: flex; align-items: center; justify-content: center; position: relative; min-height: 80px; padding: 0 20px; box-sizing: border-box; }
+      .thumb-slider-arrow { width: 44px; height: 44px; border: none; background: #fff; color: #666; border-radius: 50%; box-shadow: 0 4px 12px rgba(0,0,0,0.1); font-size: 28px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; z-index: 2; }
+      .thumb-slider-arrow.prev { margin-right: 0; }
+      .thumb-slider-arrow.next { margin-left: 0; }
+      .thumb-slider-arrow:hover { background: #f1f8fc; color: #0092db; transform: scale(1.05); }
+      .slider-thumbs-wrapper { display: flex; align-items: center; justify-content: center; flex-grow: 1; overflow: hidden; }
+      .slider-thumbs { display: flex; align-items: center; gap: 8px; transition: transform 0.3s; justify-content: center; flex-wrap: nowrap; padding: 0 10px; }
+      .slider-thumb { border: 2.5px solid transparent; background: #fff; border-radius: 12px; padding: 3px; width: 68px; height: 45px; flex-shrink: 0; cursor: pointer; transition: border-color 0.2s, box-shadow 0.2s, transform 0.2s; box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+      .slider-thumb:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,0,0,0.12); }
+      .slider-thumb img { width: 100%; height: 100%; object-fit: contain; border-radius: 8px; }
+      .slider-thumb.active { border-color: #f7931e; box-shadow: 0 4px 16px rgba(255, 153, 0, 0.25); transform: scale(1.05); }
       @keyframes slideOutLeft { 0% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(-120px); opacity: 0; } }
       @keyframes slideInRight { 0% { transform: translateX(120px); opacity: 0; } 100% { transform: translateX(0); opacity: 1; } }
       @keyframes slideOutRight { 0% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(120px); opacity: 0; } }
       @keyframes slideInLeft { 0% { transform: translateX(-120px); opacity: 0; } 100% { transform: translateX(0); opacity: 1; } }
-      /* NAVBAR STYLES */
+      .slider-main-img.slide-in-right { animation: slideInRight 0.22s cubic-bezier(0.4,0,0.2,1) forwards; }
+      .slider-main-img.slide-in-left { animation: slideInLeft 0.22s cubic-bezier(0.4,0,0.2,1) forwards; }
       .topbar { width: 100%; background: #0092db; min-height: 42px; display: flex; align-items: center; justify-content: center; }
       .topbar-content { width: 100%; max-width: 1400px; margin: 0 auto; display: flex; align-items: center; justify-content: center; padding: 0 24px; height: 40px; position: relative; }
       .topbar-center { position: absolute; left: 50%; transform: translateX(-50%); }
@@ -1038,81 +1017,34 @@
       .navbar-menu .blue-link { color: #2196f3; }
       .navbar-menu .orange-link { color: #f58220; }
       .navbar-menu-right .navbar-link { color: #686868; font-size: 12px; }
-    `;
-    document.head.appendChild(style);
-  };
-
-  const setEvents = () => {
-    // top-bar
-    let blueBarIndex = 0;
-    const el = document.getElementById('topbar-carousel');
-    if (el) {
-      el.textContent = bluBarSentences[blueBarIndex];
-      setInterval(() => {
-        blueBarIndex = (blueBarIndex + 1) % bluBarSentences.length;
-        el.textContent = bluBarSentences[blueBarIndex];
-      }, 4000);
-    }
-
-    // Slider mantigi
-    function updateSlider(direction) {
-      const slides = sliderTabData[currentTabIndex].slides;
-
-      if (direction === 'left') {
-        if (currentSliderIndex === 0) {
-          currentTabIndex = (currentTabIndex - 1 + sliderTabData.length) % sliderTabData.length;
-          currentSliderIndex = sliderTabData[currentTabIndex].slides.length - 1;
-        } else {
-          currentSliderIndex--;
-        }
-      } else if (direction === 'right') {
-        if (currentSliderIndex >= slides.length - 1) {
-          currentTabIndex = (currentTabIndex + 1) % sliderTabData.length;
-          currentSliderIndex = 0;
-        } else {
-          currentSliderIndex++;
-        }
-      }
-      updateTabButtonsActive();
-      renderSliderImage(direction);
-      renderThumbnails();
-    }
-
-    function updateTabButtonsActive() {
-      const tabButtons = document.querySelectorAll('.slider-tab-btn');
-      tabButtons.forEach((btn, i) => {
-        if (i === currentTabIndex) {
-          btn.classList.add('active');
-        } else {
-          btn.classList.remove('active');
-        }
-      });
-    }
-
-    function bindSliderArrows() {
-      const leftBtn = document.querySelector('.thumb-slider-arrow.prev');
-      const rightBtn = document.querySelector('.thumb-slider-arrow.next');
-      if (leftBtn) leftBtn.onclick = () => updateSlider('left');
-      if (rightBtn) rightBtn.onclick = () => updateSlider('right');
-    }
-
-    bindSliderArrows();
-
-    const tabButtons = document.querySelectorAll('.slider-tab-btn');
-    tabButtons.forEach((btn, i) => {
-      btn.addEventListener('click', function () {
-        const prevIndex = currentTabIndex;
-        currentTabIndex = i;
-        currentSliderIndex = 0;
-        thumbPage = 0;
-        updateTabButtonsActive();
-        renderSliderImage(i > prevIndex ? 'right' : 'left');
-        renderThumbnails();
-      });
-    });
-
-    updateTabButtonsActive();
-    renderSliderImage();
+      .product-div { width: 100%; max-width: 1320px; margin: 32px auto 0; padding: 0 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px; }
+      .product-like { background-color: #FFF7E6; border-radius: 24px; padding: 20px 32px; display: flex; justify-content: flex-start; align-items: center; }
+      .product-like h2 { font-family: 'Quicksand', sans-serif; font-size: 2.2em; font-weight: 700; line-height: 1.1; color: #f28e00; margin: 0; }
+      .products-slider { position: relative; }
+      .product-slider-wrapper { overflow: hidden; }
+      .product-slider-track { display: flex; gap: 20px; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); padding-bottom: 10px; }
+      .product-card { flex: 0 0 calc(20% - 16px); background: #fff; border: 1px solid #eee; border-radius: 16px; font-family: Arial, sans-serif; display: flex; flex-direction: column; position: relative; transition: box-shadow 0.2s, border-color 0.2s; cursor: pointer;}
+      .product-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.08); border-color: #ddd; }
+      .product-image-container { position: relative; width: 100%; padding-top: 100%; margin-bottom: 12px; }
+      .product-card-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; }
+      .discount-badge { position: absolute; top: 8px; left: 8px; background: #f28e00; color: #fff; padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: bold; z-index: 2; }
+      .product-favorite-btn { position: absolute; top: 4px; right: 4px; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.8); border: 1px solid #eee; cursor: pointer; display: flex; justify-content: center; align-items: center; color: #888; transition: all 0.2s; z-index: 2; }
+      .product-favorite-btn:hover { background: #fff; color: #f44336; transform: scale(1.1); }
+      .product-info { padding: 0 16px; flex-grow: 1; display: flex; flex-direction: column; }
+      .product-brand { font-size: 13px; color: #666; margin-bottom: 4px; }
+      .product-title { font-size: 14px; color: #333; line-height: 1.4; margin-bottom: 8px; height: 3.9em; overflow: hidden; }
+      .product-price-container { margin-bottom: 12px; margin-top: auto; }
+      .product-price { font-size: 20px; font-weight: bold; color: #333; }
+      .product-original-price { color: #999; text-decoration: line-through; font-size: 14px; margin-top: 2px; }
+      .product-add-to-cart-btn { width: calc(100% - 32px); background: #fff; border: 1px solid #ddd; color: #f28e00; padding: 12px; font-size: 15px; font-weight: bold; border-radius: 12px; cursor: pointer; transition: all 0.2s; margin: 0 16px 16px 16px; z-index: 2; }
+      .product-add-to-cart-btn:hover { background: #f28e00; color: #fff; border-color: #f28e00; }
+      .product-slider-arrow { position: absolute; top: 45%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 1px solid #eee; color: #666; cursor: pointer; display: flex; justify-content: center; align-items: center; z-index: 5; transition: all 0.2s; }
+      .product-slider-arrow:hover { background: #f28e00; color: #fff; }
+      .product-slider-arrow.prev { left: -22px; }
+      .product-slider-arrow.next { right: -22px; }
+      .product-slider-arrow:disabled { opacity: 0.5; cursor: not-allowed; background: #f5f5f5; }
+    </style>`,
+    );
   };
 
   init();
