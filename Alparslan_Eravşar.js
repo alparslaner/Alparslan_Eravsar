@@ -7,6 +7,7 @@
   let currentTabIndex = 0;
   let currentSliderIndex = 0;
   let thumbPage = 0;
+  const VISIBLE_CARDS = 4;
 
   const bluBarSentences = [
     'Karne Hediyeleri İçin Tıkla',
@@ -628,6 +629,7 @@
 
   // baslatma
   const init = () => {
+    document.title = 'ebebek | Anne ve Bebek Ürünleri - Bebek Mağazaları';
     createProductDetailContainer();
     loadFonts();
     buildHTML();
@@ -701,7 +703,6 @@
 
         const cardContent = `
         <div class="product-image-container">
-            ${hasDiscount ? `<div class="discount-badge">%${discountAmount} İNDİRİM</div>` : ''}
             <button class="product-favorite-btn" data-id="${p.id}"><span class="material-icons">favorite_border</span></button>
             <img src="${p.img}" alt="${p.name}" class="product-card-img" />
         </div>
@@ -709,8 +710,24 @@
             <div class="product-brand">${p.brand || ''}</div>
             <div class="product-title">${p.name}</div>
             <div class="product-price-container">
-                <div class="product-price">${p.price.toFixed(2)} TL</div>
-                ${hasDiscount ? `<div class="product-original-price">${p.original_price.toFixed(2)} TL</div>` : ''}
+                ${
+                  hasDiscount
+                    ? `
+                    <div class="price-row">
+                        <div class="product-original-price">${p.original_price.toFixed(2)} TL</div>
+                        <div class="discount-display">
+                            <span class="discount-percentage">%${discountAmount}</span>
+                            <div class="discount-arrow-wrapper">
+                                <span class="material-icons discount-arrow">south</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="product-price discounted">${p.price.toFixed(2)} TL</div>
+                `
+                    : `
+                    <div class="product-price">${p.price.toFixed(2)} TL</div>
+                `
+                }
             </div>
         </div>
         <button class="product-add-to-cart-btn">Ürüne Git</button>
@@ -807,8 +824,7 @@
     track.style.transform = `translateX(-${index * totalMove}px)`;
 
     prevBtn.disabled = index === 0;
-    const cardsToShow = 5;
-    nextBtn.disabled = index >= allProducts.length - cardsToShow;
+    nextBtn.disabled = index >= allProducts.length - VISIBLE_CARDS;
   };
 
   const updateSlider = (direction) => {
@@ -887,8 +903,7 @@
 
     if (productNextBtn) {
       productNextBtn.onclick = () => {
-        const cardsToShow = 5;
-        if (productSliderIndex < allProducts.length - cardsToShow) {
+        if (productSliderIndex < allProducts.length - VISIBLE_CARDS) {
           productSliderIndex++;
           updateProductSlider(productSliderIndex);
         }
@@ -900,8 +915,11 @@
       const card = e.target.closest('.product-card');
       if (!card) return;
 
-      const isButtonClick = e.target.closest('button');
-      if (isButtonClick) return;
+      // Prevent card click action only for the favorite button.
+      // Other buttons (like "Ürüne Git") and the card itself will trigger the link.
+      if (e.target.closest('.product-favorite-btn')) {
+        return;
+      }
 
       const url = card.dataset.url;
       if (url) {
@@ -932,7 +950,14 @@
           </div>
         </div>
         <div class="navbar-menu">
-          <div class="navbar-menu-left"><a href="#">Kategoriler <span class="material-icons navbar-arrow">expand_more</span></a><a href="#">Keşfet <span class="material-icons navbar-arrow">expand_more</span></a><a href="#">Hediye <span class="material-icons navbar-arrow">expand_more</span></a><a href="#" class="blue-link">İnternete Özel Ürünler</a><a href="#" class="orange-link">Kampanyalar</a><a href="#" class="orange-link">Outlet</a></div>
+          <div class="navbar-menu-left">
+            <a href="#" class="nav-category-link">Kategoriler <span class="material-icons navbar-arrow">expand_more</span></a>
+            <a href="#" class="nav-category-link">Keşfet <span class="material-icons navbar-arrow">expand_more</span></a>
+            <a href="#" class="nav-category-link">Hediye <span class="material-icons navbar-arrow">expand_more</span></a>
+            <a href="#" class="blue-link">İnternete Özel Ürünler</a>
+            <a href="#" class="orange-link">Kampanyalar</a>
+            <a href="#" class="orange-link">Outlet</a>
+          </div>
           <div class="navbar-menu-right"><a href="#" class="navbar-link"><span class="material-icons">local_shipping</span>SİPARİŞİM NEREDE</a><a href="#" class="navbar-link"><span class="material-icons">location_on</span>EN YAKIN EBEBEK</a></div>
         </div>
       </nav>
@@ -1014,34 +1039,40 @@
       .navbar-menu-left, .navbar-menu-right { display: flex; align-items: center; gap: 6px; }
       .navbar-menu a { display: flex; align-items: center; text-decoration: none; color: #333; font-weight: 700; font-size: 15px; padding: 0 6px; height: 44px; border-radius: 6px; transition: background 0.2s; }
       .navbar-menu a .navbar-arrow { font-size: 16px; color: #888; }
+      .navbar-menu .nav-category-link { color: #686868; }
       .navbar-menu .blue-link { color: #2196f3; }
       .navbar-menu .orange-link { color: #f58220; }
       .navbar-menu-right .navbar-link { color: #686868; font-size: 12px; }
-      .product-div { width: 100%; max-width: 1320px; margin: 32px auto 0; padding: 0 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px; }
+      .product-div { width: 100%; max-width: 1280px; margin: 32px auto 0; padding: 0 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 24px; }
       .product-like { background-color: #FFF7E6; border-radius: 24px; padding: 20px 32px; display: flex; justify-content: flex-start; align-items: center; }
       .product-like h2 { font-family: 'Quicksand', sans-serif; font-size: 2.2em; font-weight: 700; line-height: 1.1; color: #f28e00; margin: 0; }
       .products-slider { position: relative; }
       .product-slider-wrapper { overflow: hidden; }
-      .product-slider-track { display: flex; gap: 20px; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); padding-bottom: 10px; }
-      .product-card { flex: 0 0 calc(20% - 16px); background: #fff; border: 1px solid #eee; border-radius: 16px; font-family: Arial, sans-serif; display: flex; flex-direction: column; position: relative; transition: box-shadow 0.2s, border-color 0.2s; cursor: pointer;}
-      .product-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.08); border-color: #ddd; }
+      .product-slider-track { display: flex; gap: 16px; transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1); padding-bottom: 10px; }
+      .product-card { flex: 0 0 calc(25% - 12px); background: #fff; border: 2px solid #eee; border-radius: 16px; font-family: Arial, sans-serif; display: flex; flex-direction: column; position: relative; transition: all 0.2s; cursor: pointer; padding: 5px; box-sizing: border-box; }
+      .product-card:hover { box-shadow: 0 8px 24px rgba(0,0,0,0.08); border-width: 4px; border-color: #f28e00; }
       .product-image-container { position: relative; width: 100%; padding-top: 100%; margin-bottom: 12px; }
       .product-card-img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: contain; }
-      .discount-badge { position: absolute; top: 8px; left: 8px; background: #f28e00; color: #fff; padding: 5px 10px; border-radius: 8px; font-size: 12px; font-weight: bold; z-index: 2; }
       .product-favorite-btn { position: absolute; top: 4px; right: 4px; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.8); border: 1px solid #eee; cursor: pointer; display: flex; justify-content: center; align-items: center; color: #888; transition: all 0.2s; z-index: 2; }
       .product-favorite-btn:hover { background: #fff; color: #f44336; transform: scale(1.1); }
-      .product-info { padding: 0 16px; flex-grow: 1; display: flex; flex-direction: column; }
+      .product-info { padding: 0; flex-grow: 1; display: flex; flex-direction: column; }
       .product-brand { font-size: 13px; color: #666; margin-bottom: 4px; }
       .product-title { font-size: 14px; color: #333; line-height: 1.4; margin-bottom: 8px; height: 3.9em; overflow: hidden; }
       .product-price-container { margin-bottom: 12px; margin-top: auto; }
       .product-price { font-size: 20px; font-weight: bold; color: #333; }
-      .product-original-price { color: #999; text-decoration: line-through; font-size: 14px; margin-top: 2px; }
-      .product-add-to-cart-btn { width: calc(100% - 32px); background: #fff; border: 1px solid #ddd; color: #f28e00; padding: 12px; font-size: 15px; font-weight: bold; border-radius: 12px; cursor: pointer; transition: all 0.2s; margin: 0 16px 16px 16px; z-index: 2; }
+      .product-price.discounted { color: #2E8B57; }
+      .product-original-price { color: #999; text-decoration: line-through; font-size: 14px; }
+      .price-row { display: flex; align-items: center; justify-content: flex-start; gap: 8px; }
+      .discount-display { display: flex; align-items: center; gap: 4px; color: #2E8B57; font-weight: bold; }
+      .discount-percentage { font-size: 14px; }
+      .discount-arrow-wrapper { background-color: #2E8B57; color: white; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; }
+      .discount-arrow { font-size: 14px !important; }
+      .product-add-to-cart-btn { width: 100%; background: #fff; border: 1px solid #ddd; color: #f28e00; padding: 12px; font-size: 15px; font-weight: bold; border-radius: 12px; cursor: pointer; transition: all 0.2s; margin: 0 0 10px 0; z-index: 2; }
       .product-add-to-cart-btn:hover { background: #f28e00; color: #fff; border-color: #f28e00; }
       .product-slider-arrow { position: absolute; top: 45%; transform: translateY(-50%); width: 44px; height: 44px; border-radius: 50%; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border: 1px solid #eee; color: #666; cursor: pointer; display: flex; justify-content: center; align-items: center; z-index: 5; transition: all 0.2s; }
       .product-slider-arrow:hover { background: #f28e00; color: #fff; }
-      .product-slider-arrow.prev { left: -22px; }
-      .product-slider-arrow.next { right: -22px; }
+      .product-slider-arrow.prev { left: -30px; }
+      .product-slider-arrow.next { right: -30px; }
       .product-slider-arrow:disabled { opacity: 0.5; cursor: not-allowed; background: #f5f5f5; }
     </style>`,
     );
