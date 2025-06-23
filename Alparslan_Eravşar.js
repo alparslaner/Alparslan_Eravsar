@@ -643,6 +643,7 @@
     buildHTML();
     buildCSS();
     renderSliderImage();
+    setUnhandledClickCatcher();
     fetchAndRenderProducts().then(() => {
       setEvents();
     });
@@ -705,6 +706,12 @@
       'https://fonts.googleapis.com/css2?family=Quicksand:wght@700&display=swap';
     quicksandFontLink.rel = 'stylesheet';
     document.head.appendChild(quicksandFontLink);
+
+    const poppinsFontLink = document.createElement('link');
+    poppinsFontLink.href =
+      'https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;700&display=swap';
+    poppinsFontLink.rel = 'stylesheet';
+    document.head.appendChild(poppinsFontLink);
   };
 
   const renderProductSlider = (products) => {
@@ -898,6 +905,32 @@
 
   //js event
   const setEvents = () => {
+    // Logo click to scroll top
+    const logo = document.querySelector('.navbar-header .logo');
+    if (logo) {
+      logo.addEventListener('click', (e) => {
+        e.preventDefault();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+    }
+
+    // Back to top button
+    const backToTopBtn = document.getElementById('back-to-top-btn');
+    if (backToTopBtn) {
+      backToTopBtn.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      });
+
+      window.addEventListener('scroll', () => {
+        if (window.scrollY > 200) {
+          backToTopBtn.classList.add('visible');
+        } else {
+          backToTopBtn.classList.remove('visible');
+        }
+      });
+    }
+
+    // Top Bar Carousel
     let blueBarIndex = 0;
     const el = document.getElementById('topbar-carousel');
     if (el) {
@@ -967,6 +1000,33 @@
       }
     });
   };
+
+  const setUnhandledClickCatcher = () => {
+    document.body.addEventListener('click', (e) => {
+      const clickableElement = e.target.closest('a, button');
+      if (!clickableElement) {
+        return;
+      }
+
+      const EXEMPTED_SELECTORS = [
+        '.logo',
+        '#back-to-top-btn',
+        '.thumb-slider-arrow',
+        '.slider-tab-btn',
+        '.slider-thumb',
+        '.product-slider-arrow',
+        '.product-card',
+      ];
+
+      const isExempt = EXEMPTED_SELECTORS.some((selector) => clickableElement.closest(selector));
+
+      if (!isExempt) {
+        e.preventDefault();
+        console.log('Wrong Page');
+      }
+    });
+  };
+
   //html
   const buildHTML = () => {
     document.querySelector('.product-detail').innerHTML = `
@@ -985,7 +1045,7 @@
           <div class="search-bar"><span class="material-icons search-icon">search</span><input type="text" placeholder="Ürün, kategori veya marka arayın"></div>
           <div class="navbar-actions">
             <a href="#" class="favorite-btn" aria-label="Favoriler"><span class="material-icons">favorite_border</span></a>
-            <a href="#" class="login-btn"><span class="material-icons">person</span><span>Giriş Yap/Üye Ol</span></a>
+            <a href="#" class="login-btn"><span class="material-icons">person</span><span>Hesabım</span></a>
             <a href="#" class="cart-btn"><span class="material-icons">shopping_cart</span><span>SEPETİM</span></a>
           </div>
         </div>
@@ -1026,8 +1086,13 @@
             <button class="product-slider-arrow next"><span class="material-icons">chevron_right</span></button>
         </div>
       </div>
+      <button id="back-to-top-btn" class="back-to-top-btn">
+        <span class="material-icons">north</span>
+        <span>Başa Dön</span>
+      </button>
     `;
   };
+
   //css
   const buildCSS = () => {
     document.head.insertAdjacentHTML(
@@ -1249,11 +1314,11 @@
       }
       .topbar {
         width: 100%;
-        background: #0092db;
-        min-height: 42px;
+        background: #0092DB;
         display: flex;
         align-items: center;
         justify-content: center;
+        padding: 27px 0;
       }
       .topbar-content {
         width: 100%;
@@ -1261,10 +1326,7 @@
         margin: 0 auto;
         display: flex;
         align-items: center;
-        justify-content: center;
-        padding: 0 24px;
-        height: 40px;
-        position: relative;
+        gap: 2px;
       }
       .topbar-center {
         position: absolute;
@@ -1272,16 +1334,17 @@
         transform: translateX(-50%);
       }
       .topbar-carousel {
-        font-size: 1.2rem;
+        font-family: 'Quicksand', sans-serif;
+        font-size: 1.6em;
         font-weight: 700;
-        color:white;
+        color: white;
       }
       .topbar-links {
         display: flex;
         align-items: center;
-        gap: 18px;
+        gap: 3.5em;
         position: absolute;
-        right: 36px;
+        right: 13.5em;
       }
       .topbar-link {
         color: #fff;
@@ -1291,6 +1354,15 @@
         display: flex;
         align-items: center;
         gap: 2px;
+      }
+      .topbar-link:hover {
+        color: #fff;
+        text-decoration: none;
+      }
+      .topbar-link .material-icons {
+        font-weight: 300;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
       }
       .navbar {
         width: 100%;
@@ -1302,25 +1374,28 @@
       .navbar-header {
         width: 100%;
         max-width: 1400px;
-        margin: 0 auto;
+        margin: 0px auto;
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 18px 24px 10px 24px;
-        gap: 18px;
+        padding: 15px 0px 15px 28px;
+        gap: 14px;
+      }
+      .navbar-header .logo {
+        margin-right: 0;
       }
       .navbar-header .logo img {
-        height: 38px;
+        height: 35px;
       }
       .search-bar {
-        flex: 1;
+        /* flex: 1; */
         display: flex;
         align-items: center;
-        max-width: 600px;
-        border-radius: 24px;
+        width: 600px;
+        border-radius: 28px;
         background: #f1f8fc;
         border: none;
-        height: 44px;
+        height: 50px;
         padding: 0 18px;
       }
       .search-bar .search-icon {
@@ -1337,58 +1412,78 @@
         display: flex;
         align-items: center;
         gap: 12px;
+        margin-left: 0;
       }
       .favorite-btn, .login-btn, .cart-btn {
         display: flex;
         align-items: center;
         text-decoration: none;
-        height: 44px;
-        border-radius: 24px;
+        height: 50px;
+        border-radius: 28px;
         transition: background 0.2s, box-shadow 0.2s;
         box-sizing: border-box;
       }
       .favorite-btn {
         border: 1.2px solid #e3e3e3;
         border-radius: 50%;
-        width: 44px;
-        height: 44px;
+        width: 48px;
+        height: 48px;
         justify-content: center;
         color: #2196f3;
         background: #fff;
+      }
+      .favorite-btn:hover {
+        background-color: #EBF6FC;
       }
       .login-btn {
         border: 1.2px solid #2196f3;
         background: #fff;
         color: #2196f3;
-        font-weight: 700;
-        padding: 0 18px;
+        font-weight: 400;
+        padding: 0 16px;
+        font-family: 'Poppins', cursive;
+      }
+      .login-btn:hover {
+        background: #fff;
+        color: #2196f3;
       }
       .login-btn span:last-child {
         font-size: 15px;
+        font-weight: 400;
       }
       .cart-btn {
-        background: #f1f8fc;
-        color: #2196f3;
-        font-weight: 700;
+        background: #EBF6FC;
+        color: #0092DB;
+        font-weight: 400;
         border: none;
-        padding: 0 24px;
+        padding: 0 22px;
+        font-family: 'Poppins', cursive;
+      }
+      .cart-btn:hover {
+        background: #0091D5;
+        color: #fff;
       }
       .cart-btn span:last-child {
-        font-size: 15px;
+        font-size: 16px;
       }
       .navbar-menu {
-        width: 100%;
-        max-width: 1400px;
-        margin: 0 auto;
+      width: 80%;
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fff;
+      border-top: 1px solid #e3e3e3;
+      padding: 3px 24px 20px 24px;
+      min-height: 44px; 
+      }
+      .navbar-menu-left {
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        background: #fff;
-        border-top: 1px solid #e3e3e3;
-        padding: 0 24px;
-        min-height: 44px;
+        gap: 20px;
       }
-      .navbar-menu-left, .navbar-menu-right {
+      .navbar-menu-right {
         display: flex;
         align-items: center;
         gap: 6px;
@@ -1398,9 +1493,10 @@
         align-items: center;
         text-decoration: none;
         color: #333;
+        font-family: 'Quicksand', sans-serif;
         font-weight: 700;
-        font-size: 15px;
-        padding: 0 6px;
+        font-size: 17.28px;
+        padding: 0 12px;
         height: 44px;
         border-radius: 6px;
         transition: background 0.2s;
@@ -1413,14 +1509,24 @@
         color: #686868;
       }
       .navbar-menu .blue-link {
-        color: #2196f3;
+        color: #0091d5;
       }
       .navbar-menu .orange-link {
-        color: #f58220;
+        color: #F28E00;
+      }
+      .navbar-menu .blue-link:hover,
+      .navbar-menu .orange-link:hover {
+        text-decoration: underline;
       }
       .navbar-menu-right .navbar-link {
         color: #686868;
-        font-size: 12px;
+        font-family: 'Poppins', cursive;
+        font-weight: 500;
+        font-size: 11.52px;
+      }
+      .navbar-menu-right .navbar-link .material-icons {
+        color: #0092DB;
+        margin-right: 6px;
       }
       .product-div {
         width: 100%;
@@ -1634,6 +1740,43 @@
         opacity: 0.5;
         cursor: not-allowed;
         background: #f5f5f5;
+      }
+      .back-to-top-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        width: auto;
+        height: 30px;
+        background-color: #fff;
+        color: #333;
+        border: 1px solid #eee;
+        border-radius: 15px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 5px;
+        padding: 0 15px;
+        font-size: 11px;
+        font-weight: 600;
+        box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+        cursor: pointer;
+        z-index: 100;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(20px);
+        transition: opacity 0.3s, visibility 0.3s, transform 0.3s;
+      }
+      .back-to-top-btn .material-icons {
+        font-size: 17px;
+      }
+      .back-to-top-btn.visible {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+      }
+      .search-bar .search-icon,
+      .login-btn .material-icons {
+        font-size: 28px;
       }
     </style>`,
     );
