@@ -1045,7 +1045,19 @@
           <div class="search-bar"><span class="material-icons search-icon">search</span><input type="text" placeholder="Ürün, kategori veya marka arayın"></div>
           <div class="navbar-actions">
             <a href="#" class="favorite-btn" aria-label="Favoriler"><span class="material-icons">favorite_border</span></a>
-            <a href="#" class="login-btn"><span class="material-icons">person</span><span>Hesabım</span></a>
+            <div class="account-dropdown-wrapper">
+              <a href="#" class="login-btn"><span class="material-icons">person</span><span>Hesabım</span></a>
+              <div class="account-dropdown-menu">
+                <a class="dropdown-login-btn">Giriş Yap / Hesap Oluştur</a>
+                <ul>
+                  <li><a><span class="dropdown-icon siparislerim-icon"></span> Siparişlerim</a></li>
+                  <li><a><span class="dropdown-icon mesajlarim-icon"></span> Mesajlarım</a></li>
+                  <li><a><span class="dropdown-icon degerlendirmelerim-icon"></span> Değerlendirmelerim</a></li>
+                  <li><a><span class="dropdown-icon listelerim-icon"></span> Listelerim</a></li>
+                  <li><a><span class="dropdown-icon hediyeceklerim-icon"></span> Hediye Çeklerim</a></li>
+                </ul>
+              </div>
+            </div>
             <a href="#" class="cart-btn"><span class="material-icons">shopping_cart</span><span>SEPETİM</span></a>
           </div>
         </div>
@@ -1226,10 +1238,10 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        position: relative;
         min-height: 80px;
         padding: 0 20px;
         box-sizing: border-box;
+        gap: 16px;
       }
       .thumb-slider-arrow {
         width: 44px;
@@ -1248,12 +1260,6 @@
         flex-shrink: 0;
         z-index: 2;
       }
-      .thumb-slider-arrow.prev {
-        margin-right: 0;
-      }
-      .thumb-slider-arrow.next {
-        margin-left: 0;
-      }
       .thumb-slider-arrow:hover {
         background: #f1f8fc;
         color: #0092db;
@@ -1263,7 +1269,6 @@
         display: flex;
         align-items: center;
         justify-content: center;
-        flex-grow: 1;
         overflow: hidden;
       }
       .slider-thumbs {
@@ -1778,6 +1783,90 @@
       .login-btn .material-icons {
         font-size: 28px;
       }
+      .account-dropdown-wrapper {
+        position: relative;
+        display: inline-block;
+        padding-bottom: 5px;
+      }
+      .account-dropdown-menu {
+        display: none;
+        position: absolute;
+        top: 100%;
+        right: 0;
+        background-color: #fff;
+        min-width: 280px;
+        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.15);
+        border-radius: 16px;
+        z-index: 100;
+        padding: 16px;
+        border: 1px solid #eee;
+      }
+      .account-dropdown-wrapper:hover .account-dropdown-menu {
+        display: block;
+      }
+      .account-dropdown-menu .dropdown-login-btn {
+        display: block;
+        width: 100%;
+        background-color: #F28E00;
+        color: #fff;
+        border: none;
+        border-radius: 24px;
+        padding: 14px 0;
+        font-family: 'Poppins', cursive;
+        font-size: 16px;
+        font-weight: 700;
+        text-align: center;
+        text-decoration: none;
+        margin-bottom: 16px;
+        transition: background-color 0.2s;
+        cursor: pointer;
+      }
+      .account-dropdown-menu .dropdown-login-btn:hover {
+        background-color: #d97706;
+      }
+      .account-dropdown-menu ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+      }
+      .account-dropdown-menu ul li a {
+        color: #333;
+        padding: 12px 8px;
+        text-decoration: none;
+        display: flex;
+        align-items: center;
+        font-family: 'Poppins', cursive;
+        font-size: 15px;
+        font-weight: 300;
+        border-radius: 8px;
+        transition: background-color 0.2s;
+        position: relative;
+        cursor: pointer;
+      }
+      .account-dropdown-menu ul li a:hover {
+        background-color: #f5f5f5;
+      }
+      .account-dropdown-menu ul li a::after {
+        content: '>';
+        position: absolute;
+        right: 8px;
+        color: #ccc;
+        font-weight: bold;
+      }
+      .dropdown-icon {
+        display: inline-block;
+        width: 24px;
+        height: 24px;
+        margin-right: 12px;
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+      }
+      .siparislerim-icon { background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDkyREIiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1bGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMjEgMTZWOGEyIDIgMCAwIDAtMS0xLjczbC03LTRhMiAyIDAgMCAwLTIgMGwtNyA0QTIgMiAwIDAgMCAzIDh2OGEyIDIgMCAwIDAgMSAxLjczbDcgNGEyIDIgMCAwIDAgMiAwbDctNEEyIDIgMCAwIDAgMjEgMTZ6Ij48L3BhdGg+PHBvbHlsaW5lIHBvaW50cz0iMy4yNyA2Ljk2IDEyIDEyLjAxIDIwLjczIDYuOTYiPjwvcG9seWxpbmU+PGxpbmUgeDE9IjEyIiB5MT0iMjIuMDgiIHgyPSIxMiIgeTI9IjEyIj48L2xpbmU+PC9zdmc+'); }
+      .mesajlarim-icon { background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDkyREIiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1bGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNCA0aDE2YzEuMSAwIDIgLjkgMiAydjEyYzAgMS4xLS45IDItMiAySDRjLTEuMSAwLTMtLjktMi0yVjZjMC0xLjEuOS0yIDItMnoiPjwvcGF0aD48cG9seWxpbmUgcG9pbnRzPSIyMiw2IDEyLDEzIDIsNiI+PC9wb2xyeWxpbmU+PC9zdmc+'); }
+      .degerlendirmelerim-icon { background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDkyREIiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1bGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMjAgMkg0Yy0xLjEgMC0yIC45LTIgMnYxOGw0LTRoMTRjMS4xIDAgMi0uOSAyLTJWNGMwLTEuMS0uOS0yLTIgMnoiPjwvcGF0aD48cGF0aCBkPSJNOCAxMmg4bS04LTRoOCI+PC9wYXRoPjwvc3ZnPg=='); }
+      .listelerim-icon { background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDkyREIiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1bGluZWpvaW49InJvdW5kIj48cGF0aCBkPSJNMjAuODQgNC42MWExLjUgMS41IDAgMCAwLTcuNzggMEwxMiA1LjY3bC0xLjA2LTEuMDZhMS41IDEuNSAwIDAgMC03Ljc4IDcuNzlsMS4wNiAxLjA2TDEyIDIxLjIzbDcuNzgtNy43OCAxLjA2LTEuMDZhMS41IDEuNSAwIDAgMCAwLTcuNzh6Ij48L3BhdGg+PC9zdmc+'); }
+      .hediyeceklerim-icon { background-image: url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMwMDkyREIiIHN0cm9rZS13aWR0aD0iMS41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1bGluZWpvaW49InJvdW5kIj48cG9seWxpbmUgcG9pbnRzPSIyMCAxMiAyMCAyMiA0IDIyIDQgMTIiPjwvcG9seWxpbmU+PHJlY3QgeD0iMiIgeT0iNyIgd2lkdGg9IjIwIiBoZWlnaHQ9IjUiPjwvcmVjdD48bGluZSB4MT0iMTIiIHkxPSIyMiIgeDI9IjEyIiB5Mj0iNyI+PC9saW5lPjxwYXRoIGQ9Ik0xMiA3SDcuNWExLjUgMS41IDAgMCAxIDAtNEM5LjggMiAxMiA0IDEyIDd6Ij48L3BhdGg+PHBhdGggZD0iTTEyIDdoNC41YTEuNSAxLjUgMCAwIDAgMC01QzE0LjIgMiAxMiA0IDEyIDd6Ij48L3BhdGg+PC9zdmc+'); }
     </style>`,
     );
   };
