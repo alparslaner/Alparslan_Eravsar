@@ -50,17 +50,4 @@ Bu proje, modern bir e-ticaret web sitesi için duyarlı bir hero slider ve ür�
 - **Harici HTML/CSS yoktur**  
   Tüm yapı doğrudan JavaScript ile oluşturulur.
 
-## 🗂️ Kullanım Notları
-
-- Eğitim ve örnek uygulama amaçlıdır.
-- Chrome tarayıcıda masaüstünde test edilmesi önerilir.
-- Backend veya API anahtarı gerekmez; herkese açık JSON kullanır.
-
-## ⚖️ Lisans
-
-Ticari olmayan, eğitim amaçlı kullanıma açıktır.  
-İhtiyacınıza göre serbestçe düzenleyebilir ve geliştirebilirsiniz.
-
----
-
 **Projeyi incelediğiniz için teşekkürler!**
